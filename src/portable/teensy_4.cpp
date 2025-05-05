@@ -57,8 +57,8 @@ extern unsigned long _sbss;
 extern unsigned long _ebss;
 extern unsigned long _sdata;
 extern unsigned long _edata;
-extern unsigned long _extram_start;
-extern unsigned long _extram_end;
+extern unsigned long _extsdram_start;
+extern unsigned long _extsdram_end;
 extern unsigned long _itcm_block_count;
 extern uint8_t* _g_current_heap_end;
 
@@ -66,7 +66,7 @@ extern volatile uint32_t systick_millis_count;
 extern volatile uint32_t systick_cycle_count;
 extern volatile uint32_t scale_cpu_cycles_to_microseconds;
 extern uint32_t systick_safe_read;
-extern uint8_t external_psram_size;
+extern uint8_t external_sdram_size;
 
 void __NVIC_SetPriorityGrouping(uint32_t PriorityGroup);
 } // extern C
@@ -210,7 +210,7 @@ FLASHMEM void delay_ms(const uint32_t ms) {
     portINSTR_SYNC_BARRIER();
 }
 
-FLASHMEM std::tuple<size_t, size_t, size_t, size_t, size_t, size_t, size_t> ram1_usage() {
+FASTRUN std::tuple<size_t, size_t, size_t, size_t, size_t, size_t, size_t> ram1_usage() {
     const size_t blk_cnt { reinterpret_cast<uintptr_t>(&_itcm_block_count) };
     const size_t ram_size { static_cast<size_t>(reinterpret_cast<uint8_t*>(&_estack) - reinterpret_cast<uint8_t*>(0x20'000'000)) + blk_cnt * 32'768U };
     const size_t bss { static_cast<size_t>(reinterpret_cast<uint8_t*>(&_ebss) - reinterpret_cast<uint8_t*>(&_sbss)) };
@@ -222,7 +222,7 @@ FLASHMEM std::tuple<size_t, size_t, size_t, size_t, size_t, size_t, size_t> ram1
     return ret;
 }
 
-FLASHMEM std::tuple<size_t, size_t> ram2_usage() {
+FASTRUN std::tuple<size_t, size_t> ram2_usage() {
     const size_t ram_size { static_cast<size_t>(reinterpret_cast<uint8_t*>(0x20'280'000) - reinterpret_cast<uint8_t*>(0x20'200'000)) };
     const size_t free { static_cast<size_t>(reinterpret_cast<uint8_t*>(&_heap_end) - reinterpret_cast<uint8_t*>(&_heap_start)) };
 
@@ -230,9 +230,9 @@ FLASHMEM std::tuple<size_t, size_t> ram2_usage() {
     return ret;
 }
 
-FLASHMEM std::tuple<size_t, size_t> ram3_usage() {
-    const size_t ram_size { static_cast<size_t>(external_psram_size * (1 << 20)) };
-    const size_t free { ram_size - static_cast<size_t>(reinterpret_cast<uint8_t*>(&_extram_end) - reinterpret_cast<uint8_t*>(&_extram_start)) };
+FASTRUN std::tuple<size_t, size_t> ram3_usage() {
+    const size_t ram_size { static_cast<size_t>(external_sdram_size * (1 << 20)) };
+    const size_t free { ram_size - static_cast<size_t>(reinterpret_cast<uint8_t*>(&_extsdram_end) - reinterpret_cast<uint8_t*>(&_extsdram_start)) };
 
     const std::tuple<size_t, size_t> ret { free, ram_size };
     return ret;

@@ -144,7 +144,6 @@ FLASHMEM __attribute__((weak)) void serialport_puts(const char* str) {
 
 FLASHMEM __attribute__((weak)) void serialport_flush() {
     ::Serial.flush();
-    freertos::delay_ms(100);
 }
 
 /* SCB Application Interrupt and Reset Control Register Definitions */
@@ -256,16 +255,18 @@ FLASHMEM void error_blink(const uint8_t n) {
     }
 }
 
-FLASHMEM void print_ram_usage() {
+void print_ram_usage() {
     const auto info1 { ram1_usage() };
     const auto info2 { ram2_usage() };
+    const auto info3 { ram3_usage() };
 
-    EXC_PRINTF(PSTR("RAM1 size: %u KB, free RAM1: %u KB, data used: %u KB, bss used: %u KB, used heap: %u KB, system free: %u KB\r\n"),
+    EXC_PRINTF(("RAM1 size: %u KB, free RAM1: %u KB, data used: %u KB, bss used: %u KB, used heap: %u KB, system free: %u KB\r\n"),
         std::get<5>(info1) / 1'024UL, std::get<0>(info1) / 1'024UL, std::get<1>(info1) / 1'024UL, std::get<2>(info1) / 1'024UL, std::get<3>(info1) / 1'024UL,
         std::get<4>(info1) / 1'024UL);
-    EXC_PRINTF(PSTR("RAM2 size: %u KB, free RAM2: %u KB, used RAM2: %u KB\r\n"), std::get<1>(info2) / 1'024UL, std::get<0>(info2) / 1'024UL,
+    EXC_PRINTF(("RAM2 size: %u KB, free RAM2: %u KB, used RAM2: %u KB\r\n"), std::get<1>(info2) / 1'024UL, std::get<0>(info2) / 1'024UL,
         (std::get<1>(info2) - std::get<0>(info2)) / 1'024UL);
-    EXC_PRINTF(PSTR("\r\n"));
+    EXC_PRINTF(("RAM3 size: %u KB, free RAM3: %u KB\r\n"), std::get<1>(info3) / 1024UL, std::get<0>(info3) / 1024UL);
+    EXC_PRINTF(("\r\n"));
     EXC_FLUSH();
 }
 
