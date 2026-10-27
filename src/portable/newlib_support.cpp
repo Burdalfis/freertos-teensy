@@ -31,6 +31,7 @@
 #include <sys/lock.h>
 
 #include "avr/pgmspace.h"
+#include "Arduino.h" // Cortex-M interrupt-state accessors.
 
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -153,6 +154,27 @@ FLASHMEM void vApplicationGetTimerTaskMemory(StaticTask_t** ppxTimerTaskTCBBuffe
 #endif // configSUPPORT_STATIC_ALLOCATION
 
 FLASHMEM void init_newlib_locks() {
+    if (xPortIsInsideInterrupt() != pdFALSE) {
+        configASSERT(xPortIsInsideInterrupt() == pdFALSE);
+        return;
+    }
+    static bool initialized {};
+    if (initialized) {
+        return;
+    }
+    // This is a startup operation, never a way to leave a running RTOS critical
+    // section. A completed startup call may be repeated without resetting locks.
+    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+        configASSERT(xTaskGetSchedulerState() == taskSCHEDULER_NOT_STARTED);
+        return;
+    }
+
+    const uint32_t saved_primask { __get_PRIMASK() };
+    __disable_irq();
+    const uint32_t saved_basepri { ulPortRaiseBASEPRI() };
+    const uint32_t saved_shpr3 { SCB_SHPR3 };
+    // PRIMASK also protects an incoming BASEPRI stricter than the port's mask:
+    // static queue setup writes the port mask even before the scheduler starts.
     static StaticSemaphore_t s_mutex_buffer;
     static StaticSemaphore_t s_sfp_recursive_mutex_buffer;
     static StaticSemaphore_t s_atexit_recursive_mutex_buffer;
@@ -175,6 +197,16 @@ FLASHMEM void init_newlib_locks() {
     __lock___tz_mutex.handle_ = xSemaphoreCreateMutexStatic(&s_tz_mutex_buffer);
     __lock___dd_hash_mutex.handle_ = xSemaphoreCreateMutexStatic(&s_dd_hash_mutex_buffer);
     __lock___arc4random_mutex.handle_ = xSemaphoreCreateMutexStatic(&s_arc4random_mutex_buffer);
+
+    initialized = true;
+    // Before the scheduler starts, queue critical sections intentionally leave
+    // BASEPRI raised. Restore our caller's exact state, including SysTick and
+    // PendSV priorities, instead of retaining that startup-only kernel mask.
+    SCB_SHPR3 = saved_shpr3;
+    vPortSetBASEPRI(saved_basepri);
+    portDATA_SYNC_BARRIER();
+    portINSTR_SYNC_BARRIER();
+    __set_PRIMASK(saved_primask);
 }
 
 FLASHMEM void __retarget_lock_init(_LOCK_T* p_lock_ptr) {

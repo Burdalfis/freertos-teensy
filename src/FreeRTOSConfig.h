@@ -89,10 +89,10 @@ extern "C" {
 #define configUSE_DAEMON_TASK_STARTUP_HOOK          0
 
 /* Run time stats gathering definitions. */
-#define configGENERATE_RUN_TIME_STATS               1
+#define configGENERATE_RUN_TIME_STATS               0
 #define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()
 #define portGET_RUN_TIME_COUNTER_VALUE()            freertos_get_us()
-#define configUSE_TRACE_FACILITY                    1
+#define configUSE_TRACE_FACILITY                    0
 #define configUSE_STATS_FORMATTING_FUNCTIONS        0
 
 /* Task aware debugging. */
